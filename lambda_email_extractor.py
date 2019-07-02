@@ -65,37 +65,37 @@ def lambda_handler(event, context):
     delete_file(key, bucket)
     
 
-def extract_attachment(attachment):
-    # Process filename.zip attachments
-    if "gzip" in attachment.get_content_type():
-        contentdisp = string.split(attachment.get('Content-Disposition'), '=')
-        fname = contentdisp[1].replace('\"', '')
-        open('/tmp/' + contentdisp[1], 'wb').write(attachment.get_payload(decode=True))
-        # This assumes we have filename.xml.gz, if we get this wrong, we will just
-        # ignore the report
-        xmlname = fname[:-3]
-        open(xmlDir + xmlname, 'wb').write(gzip.open('/tmp/' + contentdisp[1], 'rb').read())
+    def extract_attachment(attachment):
+        # Process filename.zip attachments
+        if "gzip" in attachment.get_content_type():
+            contentdisp = string.split(attachment.get('Content-Disposition'), '=')
+            fname = contentdisp[1].replace('\"', '')
+            open('/tmp/' + contentdisp[1], 'wb').write(attachment.get_payload(decode=True))
+            # This assumes we have filename.xml.gz, if we get this wrong, we will just
+            # ignore the report
+            xmlname = fname[:-3]
+            open(xmlDir + xmlname, 'wb').write(gzip.open('/tmp/' + contentdisp[1], 'rb').read())
 
-    # Process filename.xml.gz attachments (Providers not complying to standards)
-    elif "zip" in attachment.get_content_type():
-        open('/tmp/attachment.zip', 'wb').write(attachment.get_payload(decode=True))
-        with zipfile.ZipFile('/tmp/attachment.zip', "r") as z:
-            z.extractall(xmlDir)
+        # Process filename.xml.gz attachments (Providers not complying to standards)
+        elif "zip" in attachment.get_content_type():
+            open('/tmp/attachment.zip', 'wb').write(attachment.get_payload(decode=True))
+            with zipfile.ZipFile('/tmp/attachment.zip', "r") as z:
+                z.extractall(xmlDir)
 
-    else:
-        print('Skipping ' + attachment.get_content_type())
+        else:
+            print('Skipping ' + attachment.get_content_type())
 
 
-def upload_resulting_files_to_s3():
-    # Put all XML back into S3 (Covers non-compliant cases if a ZIP contains multiple results)
-    for fileName in os.listdir(xmlDir):
-        if fileName.endswith(".xml"):
-            print("Uploading: " + fileName)  # File name to upload
-            s3r.meta.client.upload_file(xmlDir+'/'+fileName, outputBucket, outputPrefix+fileName)
+    def upload_resulting_files_to_s3():
+        # Put all XML back into S3 (Covers non-compliant cases if a ZIP contains multiple results)
+        for fileName in os.listdir(xmlDir):
+            if fileName.endswith(".xml"):
+                print("Uploading: " + fileName)  # File name to upload
+                s3r.meta.client.upload_file(xmlDir+'/'+fileName, outputBucket, outputPrefix+fileName)
 
-            
-# Delete the file in the current bucket
-def delete_file(key, bucket):
-    s3.delete_object(Bucket=bucket, Key=key)
-    print("%s deleted fom %s ") % (key, bucket)
+
+    # Delete the file in the current bucket
+    def delete_file(key, bucket):
+        s3.delete_object(Bucket=bucket, Key=key)
+        print("%s deleted fom %s ") % (key, bucket)
 
